@@ -3,6 +3,8 @@ import time
 from pathlib import Path
 from typing import List
 
+from dotenv import load_dotenv
+
 import google.auth
 from src.vertex_client import (
     poll_video_generation,
@@ -15,6 +17,7 @@ app = typer.Typer(help="Bulk generate videos using Vertex AI Veo")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+load_dotenv()
 
 
 
