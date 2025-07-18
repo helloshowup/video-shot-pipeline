@@ -58,3 +58,14 @@ CLI options:
 can swap in your own publisher or model by editing the URL template, or use a
 `storageUri` parameter to write results to a private bucket instead of returning
 base64 bytes.
+
+### Polling & Saving
+
+The CLI now delegates polling and saving to `poll_video_generation` and
+`save_video`. Adjust how often the status is checked with the `--poll` option
+(seconds). Results are written next to your prompt files using the prompt's stem
+as the filename.
+
+`poll_video_generation` raises a `TimeoutError` after roughly two minutes if the
+operation has not completed, and a `RuntimeError` if the operation finishes but
+no video payload is returned.
