@@ -34,6 +34,21 @@ def test_start_video_generation_success(mock_default, mock_post):
     name = start_video_generation("hi", "proj", "us-central1", "mymodel", 6, 1)
     assert name == "operations/abc123"
     assert mock_post.called
+    expected_url = (
+        "https://us-central1-aiplatform.googleapis.com/v1/"
+        "projects/proj/locations/us-central1/publishers/"
+        "google/models/mymodel:predictLongRunning"
+    )
+    expected_body = {
+        "instances": [{"prompt": "hi"}],
+        "parameters": {
+            "sampleCount": 1,
+            "videoConfig": {"duration": "6s", "generateAudio": True},
+        },
+    }
+    args, kwargs = mock_post.call_args
+    assert args[0] == expected_url
+    assert kwargs["json"] == expected_body
 
 
 @patch("src.vertex_client.requests.post")
@@ -46,6 +61,7 @@ def test_start_video_generation_http_error(mock_default, mock_post):
 
     with pytest.raises(Exception):
         start_video_generation("hi", "proj", "us-central1", "mymodel", 6, 1)
+    mock_post.assert_called_once()
 
 
 @patch("src.vertex_client.requests.post")
@@ -59,6 +75,7 @@ def test_start_video_generation_missing_name(mock_default, mock_post):
 
     with pytest.raises(RuntimeError):
         start_video_generation("hi", "proj", "us-central1", "mymodel", 6, 1)
+    mock_post.assert_called_once()
 
 
 @patch("src.vertex_client.requests.post")
