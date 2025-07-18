@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import time
 from pathlib import Path
 from typing import List
@@ -10,6 +11,9 @@ import requests
 import typer
 
 app = typer.Typer(help="Bulk generate videos using Vertex AI Veo")
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 API_URL = (
     "https://{location}-aiplatform.googleapis.com/v1/"
@@ -74,6 +78,9 @@ def all(
 
     for prompt_file in txt_files:
         prompt = prompt_file.read_text().strip()
+        if not prompt:
+            logger.warning("Skipping %s: file is empty", prompt_file.name)
+            continue
         typer.echo(f"Submitting {prompt_file.name}...")
         try:
             op_name = _submit_prompt(
