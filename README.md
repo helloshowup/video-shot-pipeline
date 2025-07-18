@@ -20,6 +20,15 @@ A minimalist Python CLI for bulk-generating MP4s from text files using Google Ve
 * `gcloud` CLI with Application Default Credentials (ADC) enabled.
 * The Python libraries listed in `requirements.txt`.
 
+## Quick Start
+
+```bash
+pip install -r requirements.txt
+gcloud auth application-default login
+gcloud config set project YOUR_PROJECT_ID
+python generate_veo3.py all ./prompts --duration 6 --count 2
+```
+
 ## Environment & Authentication
 
 Configure Application Default Credentials (ADC) with the `gcloud` CLI:
@@ -69,3 +78,14 @@ as the filename.
 `poll_video_generation` raises a `TimeoutError` after roughly two minutes if the
 operation has not completed, and a `RuntimeError` if the operation finishes but
 no video payload is returned.
+
+## JSON schema
+
+```json
+"parameters": {
+  "durationSeconds": <int>,
+  "sampleCount": <int>,
+  "generateAudio": true,
+  "storageUri": <optional-gs-uri>
+}
+```
