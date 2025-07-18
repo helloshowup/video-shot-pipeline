@@ -1,5 +1,4 @@
 import base64
-import json
 import logging
 import time
 from pathlib import Path
@@ -8,6 +7,7 @@ from typing import List
 import google.auth
 from google.auth.transport.requests import Request
 import requests
+from src.vertex_client import start_video_generation
 import typer
 
 app = typer.Typer(help="Bulk generate videos using Vertex AI Veo")
@@ -15,28 +15,13 @@ app = typer.Typer(help="Bulk generate videos using Vertex AI Veo")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-API_URL = (
-    "https://{location}-aiplatform.googleapis.com/v1/"
-    "projects/{project}/locations/{location}/publishers/google/models/{model}:predictLongRunning"
-)
+
 
 
 def _get_token() -> tuple[str, str]:
     credentials, project_id = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
     credentials.refresh(Request())
     return credentials.token, project_id
-
-
-def _submit_prompt(prompt: str, *, token: str, project: str, location: str, model: str, duration: int, count: int) -> str:
-    url = API_URL.format(project=project, location=location, model=model)
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    body = {
-        "instances": [{"prompt": prompt, "videoConfig": {"duration": f"{duration}s"}}],
-        "parameters": {"sampleCount": count},
-    }
-    resp = requests.post(url, headers=headers, json=body, timeout=30)
-    resp.raise_for_status()
-    return resp.json()["name"]
 
 
 def _poll_operation(name: str, *, token: str, poll: int) -> dict:
@@ -83,15 +68,25 @@ def all(
             continue
         typer.echo(f"Submitting {prompt_file.name}...")
         try:
-            op_name = _submit_prompt(
-                prompt,
-                token=token,
-                project=project,
-                location=location,
-                model=model,
-                duration=duration,
-                count=count,
-            )
+            op_name = None
+            for attempt in range(2):
+                try:
+                    op_name = start_video_generation(
+                        prompt=prompt,
+                        project=project,
+                        location=location,
+                        model=model,
+                        duration=duration,
+                        count=count,
+                    )
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    logger.error("\u274c Failed to start job for %s: %s", prompt_file.stem, exc)
+                    if attempt == 0:
+                        time.sleep(2 ** (attempt + 1))
+                    else:
+                        raise
+
             typer.echo(f"Operation: {op_name}")
             result = _poll_operation(op_name, token=token, poll=poll)
             out_mp4 = prompt_file.with_suffix(".mp4")

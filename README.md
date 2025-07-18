@@ -51,3 +51,10 @@ CLI options:
 * `--duration` – video duration in seconds (default `8`).
 * `--count` – number of samples to generate (default `1`).
 * `--poll` – polling interval in seconds (default `5`).
+
+## Client module
+
+`src/vertex_client.py` provides a lightweight helper for starting Veo jobs. You
+can swap in your own publisher or model by editing the URL template, or use a
+`storageUri` parameter to write results to a private bucket instead of returning
+base64 bytes.
