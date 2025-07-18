@@ -2,11 +2,13 @@ import os
 import sys
 from unittest.mock import MagicMock, patch
 
+import base64
+
 import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.vertex_client import poll_video_generation, start_video_generation
+from src.vertex_client import poll_video_generation, save_video, start_video_generation
 
 
 class MockCreds:
@@ -141,3 +143,17 @@ def test_poll_video_generation_missing_videos(mock_default, mock_post):
             "proj",
             poll_interval=0,
         )
+
+
+def test_save_video_writes_file(tmp_path):
+    payload_bytes = b"hello world"
+    b64 = base64.b64encode(payload_bytes).decode("ascii")
+    out = tmp_path / "out.mp4"
+    save_video({"bytesBase64Encoded": b64}, out)
+    assert out.exists()
+    assert out.read_bytes() == payload_bytes
+
+
+def test_save_video_missing_data(tmp_path):
+    with pytest.raises(KeyError):
+        save_video({}, tmp_path / "out.mp4")
