@@ -19,3 +19,19 @@ A minimalist Python CLI for bulk-generating MP4s from text files using Google Ve
 * Python 3.8+  
 * `gcloud` CLI with Application Default Credentials (ADC) enabled.  
 * The Python libraries listed in `requirements.txt`.
+
+## Environment & Authentication
+
+Configure Application Default Credentials (ADC) with the `gcloud` CLI:
+
+```bash
+gcloud auth application-default login
+gcloud config set project YOUR_PROJECT_ID
+```
+
+After configuration you can verify the credentials and fetch a bearer token by
+running the helper script:
+
+```bash
+python adc_token.py
+```
