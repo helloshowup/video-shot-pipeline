@@ -1,13 +1,14 @@
-import base64
 import logging
 import time
 from pathlib import Path
 from typing import List
 
 import google.auth
-from google.auth.transport.requests import Request
-import requests
-from src.vertex_client import start_video_generation
+from src.vertex_client import (
+    poll_video_generation,
+    save_video,
+    start_video_generation,
+)
 import typer
 
 app = typer.Typer(help="Bulk generate videos using Vertex AI Veo")
@@ -18,31 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 
-def _get_token() -> tuple[str, str]:
-    credentials, project_id = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
-    credentials.refresh(Request())
-    return credentials.token, project_id
+def _get_project() -> str:
+    _, project_id = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+    return project_id
 
 
-def _poll_operation(name: str, *, token: str, poll: int) -> dict:
-    url = f"https://aiplatform.googleapis.com/v1/{name}"
-    headers = {"Authorization": f"Bearer {token}"}
-    while True:
-        resp = requests.get(url, headers=headers, timeout=30)
-        resp.raise_for_status()
-        data = resp.json()
-        if data.get("done"):
-            return data
-        time.sleep(poll)
-
-
-def _save_result(result: dict, outfile: Path) -> None:
-    try:
-        b64_data = result["response"]["predictions"][0]["bytes"]
-    except KeyError:
-        raise RuntimeError("Unexpected response format")
-    binary = base64.b64decode(b64_data)
-    outfile.write_bytes(binary)
 
 
 @app.command()
@@ -55,7 +36,7 @@ def all(
     poll: int = 5,
 ) -> None:
     """Generate videos for every .txt prompt in FOLDER."""
-    token, project = _get_token()
+    project = _get_project()
     txt_files: List[Path] = sorted(folder.glob("*.txt"))
     if not txt_files:
         typer.echo("No prompt files found", err=True)
@@ -88,9 +69,14 @@ def all(
                         raise
 
             typer.echo(f"Operation: {op_name}")
-            result = _poll_operation(op_name, token=token, poll=poll)
+            result = poll_video_generation(
+                op_name,
+                location=location,
+                project=project,
+                poll_interval=poll,
+            )
             out_mp4 = prompt_file.with_suffix(".mp4")
-            _save_result(result, out_mp4)
+            save_video(result["response"]["videos"][0], out_mp4)
             typer.echo(f"Saved {out_mp4}")
         except Exception as e:  # noqa: BLE001
             typer.echo(f"Failed to process {prompt_file.name}: {e}", err=True)
