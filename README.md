@@ -2,22 +2,22 @@
 
 A minimalist Python CLI for bulk-generating MP4s from text files using Google Vertex AI Veo. Point it at a folder of `*.txt` prompts, and it will:
 
-1. Kick off a `predictLongRunning` job for each prompt.  
-2. Poll the operation until it’s complete.  
-3. Decode the base64 video payload.  
+1. Kick off a `predictLongRunning` job for each prompt.
+2. Poll the operation until it’s complete.
+3. Decode the base64 video payload.
 4. Save each result as `{promptName}.mp4`.
 
 ## **Key Points**
 
-* **Zero-config aside from ADC:** Just run `gcloud auth application-default login` and set your project.  
-* **Batch-oriented:** Processes every text file in a directory in one go.  
-* **Resilient:** Logs failures per file and continues with the rest of the batch.  
+* **Zero-config aside from ADC:** Just run `gcloud auth application-default login` and set your project.
+* **Batch-oriented:** Processes every text file in a directory in one go.
+* **Resilient:** Logs failures per file and continues with the rest of the batch.
 * **Extensible:** Designed to be easily modified. You can swap in GCS for output, or tweak parameters like duration, region, and model via CLI flags.
 
 ## **Requirements**
 
-* Python 3.8+  
-* `gcloud` CLI with Application Default Credentials (ADC) enabled.  
+* Python 3.8+
+* `gcloud` CLI with Application Default Credentials (ADC) enabled.
 * The Python libraries listed in `requirements.txt`.
 
 ## Environment & Authentication
@@ -29,9 +29,25 @@ gcloud auth application-default login
 gcloud config set project YOUR_PROJECT_ID
 ```
 
-After configuration you can verify the credentials and fetch a bearer token by
-running the helper script:
+After configuration you can verify the credentials and fetch a bearer token by running the helper script:
 
 ```bash
 python adc_token.py
 ```
+
+## Running the CLI
+
+Use `generate_veo3.py` to process every `*.txt` file in a folder:
+
+```bash
+python generate_veo3.py all ./prompts --duration 6 --count 2
+```
+
+CLI options:
+
+* `folder` – path to the prompt files.
+* `--model` – Vertex model ID (default `veo-3.0-generate-preview`).
+* `--location` – region for the request (default `us-central1`).
+* `--duration` – video duration in seconds (default `8`).
+* `--count` – number of samples to generate (default `1`).
+* `--poll` – polling interval in seconds (default `5`).
